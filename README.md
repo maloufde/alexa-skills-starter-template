@@ -20,7 +20,7 @@ Udemy course Extreme Alexa Skills Development: Templatates and Back-End here: ht
 Clone this template to your system using the ASK CLI. Specifically, run the following command:
 
 ```
-ask new --url https://github.com/AdonousTech/alexa-skills-starter-template.git
+ask new --template-branch master --template-url https://github.com/maloufde/alexa-skills-starter-template.git
 ```
 
 ### Add package.json config values
