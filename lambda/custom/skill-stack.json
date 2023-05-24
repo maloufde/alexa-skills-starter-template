@@ -1,0 +1,269 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Create infrastructure from Alexa Skill development.",
+    "Parameters": {
+        "TableName": {
+            "Type": "String",
+            "Description": "The database table for our skill."
+        },
+        "HashKey": {
+            "Type": "String",
+            "Description": "The primary key for our database table."
+        }
+    },
+    "Resources": {
+        "LambdaExecRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": {
+                        "Effect": "Allow",
+                        "Principal": {
+                            "Service": "lambda.amazonaws.com"
+                        },
+                        "Action": "sts:AssumeRole"
+                    }
+                },
+                "Policies": [{
+                    "PolicyName": "root",
+                    "PolicyDocument": {
+                        "Version": "2012-10-17",
+                        "Statement": [
+                            {
+                                "Effect": "Allow",
+                                "Action": [
+                                    "logs:*"
+                                ],
+                                "Resource": "arn:aws:logs:*:*:*"
+                            },
+                            {
+                                "Effect": "Allow",
+                                "Action": [
+                                    "dynamodb:*"
+                                ],
+                                "Resource": {"Fn::Join" : [ "", [{"Fn::Sub": "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/"}, {"Ref" : "TableName"}] ] }
+                            }
+                        ]
+                    }
+                }]
+            },
+            "DependsOn": ["DBTable"]
+        },
+        "LambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Code": {
+                    "ZipFile": {
+                        "Fn::Join": [
+                          "\n",
+                          [
+                            "exports.handler = function(event, context) {",
+                            "  console.log('hello world!');",
+                            "};"
+                          ]
+                        ]
+                      }
+                },
+                "Handler": "index.handler",
+                "MemorySize": 128,
+                "Role": {"Fn::GetAtt" : [ "LambdaExecRole", "Arn" ]},
+                "Runtime": "nodejs10.x",
+                "Timeout": 30,
+                "Environment": {
+                    "Variables": {
+                        "dbtable": {"Ref":  "TableName"}
+                    }
+                }
+            },
+            "DependsOn": "LambdaExecRole"
+        },
+        "AlexaSkillFunctionPermissions": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "FunctionName": {
+                    "Ref": "LambdaFunction"
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "alexa-appkit.amazon.com"
+            }
+        },
+        "DBTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+                "TableName": {"Ref":  "TableName"},
+                "BillingMode": "PAY_PER_REQUEST",
+                "SSESpecification": {
+                    "SSEEnabled": true
+                },
+                "KeySchema": [
+                    {
+                        "AttributeName": {"Ref": "HashKey"},
+                        "KeyType": "HASH"
+                    }
+                ],
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": {"Ref": "HashKey"},
+                        "AttributeType": "S"
+                    }
+                ]
+            }
+        },
+        "StaticWebsiteBucket" : {
+            "Type" : "AWS::S3::Bucket",
+            "Properties": {
+                "WebsiteConfiguration": {
+                    "IndexDocument": "index.html",
+                    "ErrorDocument": "error.html"
+                },
+                "PublicAccessBlockConfiguration": {
+                    "BlockPublicAcls": true,
+                    "BlockPublicPolicy": true,
+                    "RestrictPublicBuckets": true
+                },
+                "BucketEncryption" : {
+                    "ServerSideEncryptionConfiguration": [
+                        {
+                            "ServerSideEncryptionByDefault": {
+                                "SSEAlgorithm": "AES256"
+                            }
+                        }
+                    ]
+                },
+                "CorsConfiguration": {
+                    "CorsRules": [
+                        {
+                            "AllowedHeaders": ["*"],
+                            "AllowedMethods": [
+                                "GET",
+                                "HEAD"
+                            ],
+                            "AllowedOrigins": ["*"]
+                        }
+                    ]
+                }
+            }
+        }, 
+        "StaticWebSiteBucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "DependsOn": ["StaticWebsiteBucket", "OriginAccessIdentity"],
+            "Properties": {
+                "Bucket": {"Ref": "StaticWebsiteBucket"},
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Sid": "Grant a CloudFront Origin Identity access to support private content",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "CanonicalUser": {
+                                    "Fn::GetAtt": ["OriginAccessIdentity", "S3CanonicalUserId"]
+                                }
+                            },
+                            "Action": "s3:GetObject",
+                            "Resource": {"Fn::Join" : [ "", [ {"Fn::GetAtt" : [ "StaticWebsiteBucket", "Arn" ]}, "/*" ] ] }
+                        },
+                        {
+                            "Sid": "Grant a CloudFront Origin Identity access to support private content",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "CanonicalUser": {
+                                    "Fn::GetAtt": ["OriginAccessIdentity", "S3CanonicalUserId"]
+                                }
+                            },
+                            "Action": "s3:ListBucket",
+                            "Resource": {"Fn::GetAtt" : [ "StaticWebsiteBucket", "Arn" ]}
+                        }
+                    ]
+                }
+            }
+        },
+        "OriginAccessIdentity": {
+            "Type": "AWS::CloudFront::CloudFrontOriginAccessIdentity",
+            "Properties": {
+                "CloudFrontOriginAccessIdentityConfig": {
+                    "Comment": ""
+                } 
+            }
+      },   
+      "CloudFrontDistribution": {
+        "Type": "AWS::CloudFront::Distribution",
+        "DependsOn": [
+            "StaticWebSiteBucketPolicy",
+            "OriginAccessIdentity"
+        ],
+        "Properties": {
+            "DistributionConfig": {
+                "DefaultCacheBehavior": {
+                    "AllowedMethods": [
+                        "GET",
+                        "HEAD",
+                        "OPTIONS"
+                    ],
+                    "Compress": "true",
+                    "ForwardedValues": {
+                        "Headers": [
+                            "Origin"
+                        ],
+                        "Cookies": {
+                            "Forward": "none"
+                        },
+                        "QueryString": "false"
+                    },
+                    "TargetOriginId": "s3_origin",
+                    "ViewerProtocolPolicy": "redirect-to-https"
+                },
+                "DefaultRootObject": "index.html",
+                "Enabled": "true",
+                "HttpVersion": "http2",
+                "CustomErrorResponses": [
+                    {
+                        "ErrorCachingMinTTL": 0,
+                        "ErrorCode": 500
+                    }
+                ],
+                "Origins": [
+                    {
+                        "DomainName": {
+                            "Fn::GetAtt": [
+                                "StaticWebsiteBucket",
+                                "DomainName"
+                            ]
+                        },
+                        "Id": "s3_origin",
+                        "S3OriginConfig": {
+                            "OriginAccessIdentity": {"Fn::Sub": "origin-access-identity/cloudfront/${OriginAccessIdentity}"}
+                        }
+                    }
+                ],
+                "PriceClass": "PriceClass_All"
+            }
+        }
+       }    
+    },
+    "Outputs": {
+        "LambdaFunctionArn": {
+            "Description": "The execution role applied to the Lambda function(s).",
+            "Value": {"Fn::GetAtt" : [ "LambdaFunction", "Arn" ]}
+        },
+        "LambdaExecutionRole": {
+            "Description": "The execution role applied to the Lambda function(s).",
+            "Value": {"Fn::GetAtt" : [ "LambdaExecRole", "Arn" ]}
+        },
+        "DynamoDBTable": {
+            "Description": "The DynamoDB table for skill persistence",
+            "Value": {"Fn::GetAtt" : [ "DBTable", "Arn" ]}
+        },
+        "OAI": {
+            "Description": "OAI for use with Cloudfront",
+            "Value": {"Ref": "OriginAccessIdentity"}
+        },
+        "CloudFrontDistributionId": {
+            "Description": "Cloudfront distribution ID",
+            "Value": {"Ref": "CloudFrontDistribution"}
+        },
+        "CloudFrontDistributionDomain": {
+            "Description": "Cloudfront distribution domain",
+            "Value": {"Fn::GetAtt": ["CloudFrontDistribution", "DomainName"]}
+        }
+    }
+}

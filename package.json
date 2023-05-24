@@ -1,0 +1,29 @@
+{
+    "name": "adonous-tech-hello-alexa-skills",
+    "version": "1.0.0",
+    "config": {
+        "profile": "default",
+        "skillId": ""
+      },
+    "scripts": {
+      "build": "tsc",
+      "add-isp": "ask add isp",
+      "check-isp-status": "ask status --isp",
+      "deploy-skill": "npm run private-get-skill && npm run private-deploy-manifest && npm run private-deploy-model && npm run private-deploy-isp && cd ./lambda/custom && npm run update-lambda-code",
+      "deploy-skill-no-isp": "npm run private-get-skill && npm run private-deploy-manifest && npm run private-deploy-model && cd ./lambda/custom && npm run update-lambda-code",
+      "private-deploy-manifest": "ask deploy --force --profile %npm_package_config_profile% --target skill",
+      "private-deploy-model": "ask deploy --force --profile %npm_package_config_profile% --target model",
+      "private-get-skill": "ask api get-skill -s %npm_package_config_skillId% --stage development > skill.json",
+      "private-deploy-isp": "ask deploy --force --profile %npm_package_config_profile% --target isp",
+      "deploy-skill-unix": "npm run private-get-skill-unix && npm run private-deploy-manifest-unix && npm run private-deploy-model-unix && npm run private-deploy-isp-unix && cd ./lambda/custom && npm run update-lambda-code-unix",
+      "deploy-skill-no-isp-unix": "npm run private-get-skill-unix && npm run private-deploy-manifest-unix && npm run private-deploy-model-unix && cd ./lambda/custom && npm run update-lambda-code-unix",
+      "private-deploy-manifest-unix": "ask deploy --force --profile $npm_package_config_profile --target skill",
+      "private-deploy-model-unix": "ask deploy --force --profile $npm_package_config_profile --target model",
+      "private-get-skill-unix": "ask api get-skill -s $npm_package_config_skillId --stage development > skill.json",
+      "private-deploy-isp-unix": "ask deploy --force --profile $npm_package_config_profile --target isp"
+    },
+    "author": "acquiknowledge",
+    "license": "ISC",
+    "keywords": ["alexa", "typescript", "ask", "v2"],
+    "description": "Serverless application package for Alexa Skills built with ASK CLI and ASK SDK V2 and TypeScript"
+  }

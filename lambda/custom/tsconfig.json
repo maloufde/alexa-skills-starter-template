@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {               
+    "target": "es2015",                          
+    "module": "commonjs",                     
+    "strict": true,   
+    "baseUrl": "./",                       
+    "esModuleInterop": true,
+    "inlineSourceMap": true,
+    "declaration": true,
+    "outDir": "./" ,
+    "typeRoots": [
+      "node_modules/@types"
+    ],
+    "types": [
+      "node"
+    ]                
+
+  },
+  "include": ["src/**/*"],
+  "exclude": ["src/lib/index.ts"]
+}

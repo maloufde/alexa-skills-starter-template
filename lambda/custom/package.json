@@ -1,0 +1,49 @@
+{
+  "name": "adonoustech-hello-alexa-skills-lambda-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "config": {
+    "functionName": "",
+    "functionFileName": "skill_lambda.zip",
+    "functionFileLocation": "./skill_lambda",
+    "functionFileLocationNormalized": "fileb://skill_lambda.zip",
+    "region": "",
+    "stackName": "",
+    "template": "file://./skill-stack.json",
+    "profile": "",
+    "dbTableName": "",
+    "dbHashKey": "id"
+  },
+  "scripts": {
+    "build": "tsc",
+    "create-skills-stack": "aws cloudformation create-stack --profile %npm_package_config_profile% --stack-name %npm_package_config_stackName% --template-body %npm_package_config_template% --parameters ParameterKey=TableName,ParameterValue=%npm_package_config_dbTableName% ParameterKey=HashKey,ParameterValue=%npm_package_config_dbHashKey% --capabilities CAPABILITY_IAM",
+    "update-skills-stack": "aws cloudformation update-stack --profile %npm_package_config_profile% --stack-name %npm_package_config_stackName% --template-body %npm_package_config_template% --parameters ParameterKey=TableName,ParameterValue=%npm_package_config_dbTableName% ParameterKey=HashKey,ParameterValue=%npm_package_config_dbHashKey% --capabilities CAPABILITY_IAM",
+    "delete-skills-stack": "aws cloudformation update-stack --profile %npm_package_config_profile% --stack-name %npm_package_config_stackName% --template-body %npm_package_config_template% --capabilities CAPABILITY_IAM",
+    "update-lambda-code": "npm run build && npm run private-remove-package && npm run private-package-lambda && npm run private-update-lambda-code",
+    "private-update-lambda-code": "aws lambda update-function-code --profile %npm_package_config_profile% --region %npm_package_config_region% --function-name %npm_package_config_functionName% --zip-file %npm_package_config_functionFileLocationNormalized%",
+    "private-package-lambda": "zip -q -r %npm_package_config_functionFileName% ./lib index.js node_modules",
+    "private-remove-package": "rm %npm_package_config_functionFileName%",
+    "create-skills-stack-unix": "aws cloudformation create-stack --profile $npm_package_config_profile --stack-name $npm_package_config_stackName --template-body $npm_package_config_template --parameters ParameterKey=TableName,ParameterValue=$npm_package_config_dbTableName ParameterKey=HashKey,ParameterValue=$npm_package_config_dbHashKey --capabilities CAPABILITY_IAM",
+    "update-skills-stack-unix": "aws cloudformation update-stack --profile $npm_package_config_profile --stack-name $npm_package_config_stackName --template-body $npm_package_config_template --parameters ParameterKey=TableName,ParameterValue=$npm_package_config_dbTableName ParameterKey=HashKey,ParameterValue=$npm_package_config_dbHashKey --capabilities CAPABILITY_IAM",
+    "delete-skills-stack-unix": "aws cloudformation update-stack --profile $npm_package_config_profile --stack-name $npm_package_config_stackName --template-body $npm_package_config_template --capabilities CAPABILITY_IAM",
+    "update-lambda-code-unix": "npm run build && npm run private-remove-package-unix && npm run private-package-lambda-unix && npm run private-update-lambda-code-unix",
+    "private-update-lambda-code-unix": "aws lambda update-function-code --profile $npm_package_config_profile --region $npm_package_config_region --function-name $npm_package_config_functionName --zip-file $npm_package_config_functionFileLocationNormalized",
+    "private-package-lambda-unix": "zip -q -r $npm_package_config_functionFileName ./lib index.js node_modules",
+    "private-remove-package-unix": "rm $npm_package_config_functionFileName"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ask-sdk": "^2.6.0",
+    "ask-sdk-dynamodb-persistence-adapter": "^2.6.0",
+    "ask-sdk-s3-persistence-adapter": "^2.6.0",
+    "lodash": "^4.17.15"
+  },
+  "devDependencies": {
+    "@types/node": "^12.0.10",
+    "@types/lodash": "^4.14.149",
+    "typescript": "^3.5.2"
+  },
+  "keywords": ["alexa", "typescript", "ask", "v2"],
+  "description": "Serverless application package for Alexa Skills built with ASK CLI and ASK SDK V2 and TypeScript"
+}
